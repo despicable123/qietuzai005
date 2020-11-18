@@ -10,6 +10,21 @@ function myNew(){
     return typeof result === 'object'?result:obj;
   }
 
-  
+function copy(object){
+  let res = {};
+  for (const key in object){
+    res[key] = object[key]
+  }
+  return res
+}
+
+function deepcopy(obj){
+  let res = obj instanceof Array?[]:{};
+  for(const [k,v] of Object.entries(obj)){ //无论数组还是对象都可以被解构
+    res[k] = typeof v == 'object'?deepcopy(v):v;
+  }
+
+  return res;
+}
 
   
