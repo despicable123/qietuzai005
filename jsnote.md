@@ -57,3 +57,40 @@
 + 寄生式继承 思路类似寄生构造函数和工厂模式：创建一个实现继承的函数，以某种方式增强对象，然后返回这个对象。适合主要关注对象，而不在乎类型和构造函数的场景。
 + 寄生式组合继承 取得父类原型的一个副本，将返回的新对象赋值给字类原型 创建对象、增强对象、赋值对象  1、盗用构造函数继承属性 2、寄生式继承方法
 
+* Object.getOwnPropertyDescriptor 获取属性特征
+* Object.preventExtensions(object) 不可以往该对象添加属性
+* Object.seal() 阻止添加新属性并将所有现有属性标记为不可配置。当前属性的值只要原来是可写的就可以改变
+* Object.freeze() 不可改，比seal更严格
+* set property （v） 控制访问 get property 访问器
+* 用symbol可以把属性私有
+
+## 代理
+1. new Proxy（）
+2. 实现双向绑定
+    ```js
+    function View(){
+        let proxy = new Proxy({},{
+            get(obj,property){},
+            set(obj,property,value){
+                document
+                    .querySelectorAll(`[v-model="${property}"]`)
+                    .forEach(item => {
+                        item.value = value
+                    })
+                document
+                    .querySelectorAll(`[v-bind="${property}"]`)
+                    .forEach(item => {
+                        item.innerHTML = value
+                    })
+            }
+        })
+        this.init = function(){
+            const els = document.querySelectorAll("[v-model]")
+            els.forEach(item=>{
+                item.addEventListener("keyup",function(){
+                    proxy[this.getAttribute('v-model')] = this.value;
+                })
+            })
+        }
+    }
+3. 代理工厂
