@@ -26,6 +26,26 @@
     return User
     })()
     ```
+
+    ```js
+    const host = new WeakMap();
+    class User{
+        constructor(name){
+            this.name = name;
+            host.set(this,"https")
+        }
+
+        set host(url){
+            host.set(this,url)
+        }
+
+        get host(){
+            return host.get(this)
+        }
+    }
+    let hd = new User()
+    hd.host //读取私有属性，对外不暴露host 不可修改
+
 2.	assign 将每个源对象可枚举和自由属性复制到目标对象，使用源对象的get获取属性的值，使用目标对象上的set设置属性的值/
 3.	assign不会回滚，尽力而为。
 4.	Objectis(a,b)检查超过多个用递归
@@ -71,6 +91,14 @@
 * Object.freeze() 不可改，比seal更严格
 * set property （v） 控制访问 get property 访问器
 * 用symbol可以把属性私有
+* 检查原型链（instance of）
+ ```js
+    function checkPrototype(obj,constructor){
+        if(!obj._proto_) return false;
+        if(obj._proto_ == constructor.prototype) return true;
+        return checkPrototype(obj._proto_,constructor);
+    }
+  ```
 
 ## 代理
 1. new Proxy（）
@@ -103,6 +131,8 @@
     }
     ```
 3. 代理工厂
+4. proxy.prototype是undefined，只有用严格相等才能区分代理和目标
+5. 
 
 ## 类
 * 类实质上还是用原型和构造函数的概念
