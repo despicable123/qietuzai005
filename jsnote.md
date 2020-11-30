@@ -175,3 +175,12 @@
 ## promise
 1. promise.resolve()静态方法能够包装任何非promise值，包括错误对象，将其转化为解决的期约，如果传入的参数本身就是一个期约，那它的行为就类似于一个空包装。可以说是一个幂等方法，这个幂等性会保留传入期约的状态。
 2. promise.reject()没有幂等性，传入一个期约对象，这个期约会成为它返回的拒绝期约的理由
+3. promise.all()/race(),一个拒绝合成拒绝，一个待定合成待定。
+4. ```js
+    function compose(...fns){
+        return (x)=>fns.reduce((promise, fn)=>promise.then(fn),Promise.resolve(x))
+    }
+
+    let addTen = compose(...fns);  addTen(8).then(console.log);
+    ```
+5. 
