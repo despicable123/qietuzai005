@@ -183,4 +183,24 @@
 
     let addTen = compose(...fns);  addTen(8).then(console.log);
     ```
-5. 
+5. await后面跟着一个立即可用的值，函数的其余部分也会被异步求值，js运行时在碰到await关键字时，会记录在哪里暂停执行，等到await右边的值可用了，js在运行时会向消息队列中推送一个任务，这个任务会恢复异步函数的执行。如果await后面是一个期约，为了执行异步函数，实际上会有两个任务被添加到消息队列并被异步求值。
+6. ```js
+    async function sleep(delay){
+        return new Promise(resolve)=>{setTimeout(resolve,delay)}
+    }
+    ```
+7. promise包装定时器
+   ```js
+        function timeout(delay = 1000){
+            return new Promise((resolve)=>setTimeout(resolve,delay))
+        }
+        timeout(2000)
+            .then(()=>{
+                console.log('123')
+                return timeout(2000)
+            })
+            .then(()=>{
+                console.log('456')
+            })
+   ```
+8. 
