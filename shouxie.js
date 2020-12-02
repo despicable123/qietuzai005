@@ -94,3 +94,89 @@ function add(){
   }
   return adder
 }
+
+//定时器
+function handle(){
+  let i = 0;
+  (function run(){
+    hd.innerHTML = i;
+    hd.style.width = i + '%'
+    if(++i <= 100){
+      setTimeout(run,20)
+    }
+  })()
+}
+handle()
+
+//手写Promise
+class myPromise{
+  static PENDING = 'pending'
+  static FUFILLED = 'fulfilled'
+  static REJECTED = 'rejected'
+  constructor(executor){
+    this.status = myPromise.PENDING
+    this.value = null
+    this.callback = []
+    //捕获异常
+    try {
+    //bind硬绑定this
+      executor(this.resolve.bind(this),this.reject.bind(this))
+    } catch (error) {
+      this.reject(error)
+    }
+    
+  }
+    resolve(value){
+      //防止状态改变
+      if (this.status == myPromise.PENDING){
+        this.status = myPromise.FUFILLED
+        this.value = value
+        this.callback.map(callback=>{
+          callback.onFulfilled(value)
+        })
+      }
+  }
+    reject(reason){
+      if (this.status == myPromise.PENDING){
+        this.status = myPromise.REJECTED
+        this.value = reason
+        this.callback.map(callback=>{
+          callback.onRejected(reason)
+        })
+      }
+  }
+    then(onFulfilled, onRejected){
+      if (typeof onFulfilled != 'function'){
+        onFulfilled = ()=>{}
+      }
+      if (typeof onRejected != 'function'){
+        onFulfilled = ()=>{}
+      }
+
+      if (this.status == myPromise.PENDING){
+        this.callback.push({onFulfilled,onRejected})
+      }
+
+      if (this.status == myPromise.FUFILLED){
+        //实现异步
+        setTimeout(()=>{
+          try {
+            onFulfilled(this.value)
+          } catch (error) {
+            onRejected(error)
+          }
+        },0)
+      }
+      else if (this.status == myPromise.REJECTED){
+        setTimeout(()=>{
+          try {
+            onRejected(this.value)
+          } catch (error) {
+            onRejected(error)
+          }
+        },0)
+      }
+      
+  }
+    
+}

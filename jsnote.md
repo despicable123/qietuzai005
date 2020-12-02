@@ -203,4 +203,63 @@
                 console.log('456')
             })
    ```
-8. 
+8. 扁平化定时器 
+    ```js
+    function interval(delay = 1000,callback){
+        return new Promise(resolve=>{
+            let id = setInterval(()=>{
+                console.log(1)
+            },delay)
+        })
+    }
+    interval(100,(id,resolve)=>{
+        if(condition){
+            clearIterval(id)
+            resolve()
+        }
+    }).then()
+   ```
+9. ```js
+    function queue(num){
+        let promise = Promise.resolve();
+        num.map(v=>{
+            promise = promise.then(_ = >{
+                return new Promise(resolve=>{
+                    setTimeout(()=>{
+                        console.log(v)
+                        resolve()
+                    },1000)
+                })
+            })
+        })
+    }
+   ```
+10. ```js
+      function queue(num){
+          num.reduce((promise,n)=>{
+              return promise.then(_=>{
+                  return new Promise((resolve)=>{
+                      setTimeout(()=>{
+                          cosole.log(n)
+                          resolve()
+                      },1000)
+                  })
+              })
+          },Promise.resolve())
+      }
+    ```
+11. 进度条
+    ```js
+      async function load(users){
+          for(let i = 0;i < user.length;i++){
+              let users = await query(users[i])
+              let progress = ((i+1) / users.length) * 100;
+              loading.style.width = progress + '%';
+              loading.innerHTML = Math.round(progress) + '%'
+          }
+      }
+    ```
+
+## Eventloop
+1. js放在dom渲染后面
+2. 
