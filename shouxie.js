@@ -131,52 +131,127 @@ class myPromise{
       if (this.status == myPromise.PENDING){
         this.status = myPromise.FUFILLED
         this.value = value
-        this.callback.map(callback=>{
-          callback.onFulfilled(value)
-        })
+        setTimeout(() => {
+          this.callback.map(callback=>{
+            callback.onFulfilled(value)
+          })
+        }, 0);
       }
   }
     reject(reason){
       if (this.status == myPromise.PENDING){
         this.status = myPromise.REJECTED
         this.value = reason
-        this.callback.map(callback=>{
-          callback.onRejected(reason)
-        })
+        setTimeout(() => {
+          this.callback.map(callback=>{
+            callback.onRejected(reason)
+          })
+        }, 0);
       }
   }
     then(onFulfilled, onRejected){
       if (typeof onFulfilled != 'function'){
-        onFulfilled = ()=>{}
+        onFulfilled = ()=>this.value
       }
       if (typeof onRejected != 'function'){
-        onFulfilled = ()=>{}
+        onFulfilled = ()=>{throw this.value}
       }
 
-      if (this.status == myPromise.PENDING){
-        this.callback.push({onFulfilled,onRejected})
-      }
+      let promise = new myPromise(()=>{
+        if (this.status == myPromise.PENDING){
+          this.callback.push({
+            onFulfilled:(value)=>{
+              this.parse(promise,onFulfilled(value),resolve,reject)
+              
+            },
+            onRejected:(value)=>{
+              this.parse(promise,onRejected(value),resolve,reject)
+              
+            }
+          })
+        }
+  
+        if (this.status == myPromise.FUFILLED){
+          //实现异步
+          setTimeout(()=>{
+            this.parse(promise,onFulfilled(this.value),resolve,reject)
+            
+          },0)
+        }
+        else if (this.status == myPromise.REJECTED){
+          setTimeout(()=>{
+            this.parse(promise,onRejected(this.value),resolve,reject)
+            
+          },0)
+        }
+      })
 
-      if (this.status == myPromise.FUFILLED){
-        //实现异步
-        setTimeout(()=>{
-          try {
-            onFulfilled(this.value)
-          } catch (error) {
-            onRejected(error)
-          }
-        },0)
-      }
-      else if (this.status == myPromise.REJECTED){
-        setTimeout(()=>{
-          try {
-            onRejected(this.value)
-          } catch (error) {
-            onRejected(error)
-          }
-        },0)
-      }
+      return promise
       
+  }
+
+  parse(promise, result, resolve, reject){
+    if(promise == result){
+      throw new TypeError('Chaining cycle detected')
+    }
+    try {
+      
+      
+      if(result instanceof myPromise){
+        result.then(resolve,reject)
+      }else{
+        resolve(result)
+      }
+    } catch (error) {
+      reject(error)
+    }
+  }
+
+  static resolve(value){
+    return new myPromise((resolve,reject)=>{
+      if(value instanceof myPromise){
+        value.then(resolve,reject)
+      }else resolve(value)
+    })
+  }
+
+  static reject(value){
+    return new myPromise((resolve,reject)=>{
+      if(value instanceof myPromise){
+        value.then(resolve,reject)
+      }else resolve(value)
+    })
+  }
+
+  static all(promises){
+    const resolves = []
+    return new myPromise((resolve,reject)=>{
+      promises.forEach(promise => {
+        
+        promise.then(
+          value =>{
+            resolves.push(value)
+            if(resolves.length == promises.length){
+              resolve(resolves)
+            }
+        },reason=>{
+          reject(reason)
+        })
+      });
+
+    }) 
+  }
+
+  static race(promises){
+    return new myPromise((resolve,reject)=>{
+      promises.map(promise=>{
+        promise.then(value=>{
+          resolve(value)
+        }, reason=>{
+          reject(reason)
+        })
+      })
+    })
   }
     
 }
