@@ -271,3 +271,50 @@
 4. 当页面中包含来自某个不同子域的窗格（<frame>）或者内嵌窗格（<iframe>）时，设置document.domain时有用的，因为跨源通信隐患，不同子域无法通过js通信，如果把document.domain设置成相同值，这些页面就可以访问对方js了，这个属性一旦放松就不能收紧了
 5. querySelector（）返回的是NodeList的静态实例，只是静态的快照而不是实时的查询
 6. selectors API采用的css选择符的模式匹配dom元素
+7. defer可以延迟脚本执行
+8. getElementById属于document方法,节点对象不可用
+9. attachEvent（）事件处理程序是在全局作用域中运行的，this指向window，这里与DOM0方式不一样
+10. attachEvent（）事件处理程序会以添加它们的顺序反向触发
+11. dom中发生事件时，所有相关信息都会被收集并存储在一个名为event对象中，这个对象包含了一些基本操作信息，比如导致事件的元素，发生的事件类型
+12. 在事件处理程序内部，this对象始终等于currentTarget值，target只包含事件的实际目标
+13. event对象旨在事件处理程序执行期间存在，执行完毕后就会销毁
+14. 如果事件处理程序使用dom0方式指定的，event对象只是window对象的一个属性，需要通过window.event调用，如果事件处理程序使用attachEvent（）指定的，则event对象会作为唯一的参数传给处理函数，event对象仍然时window对象的属性
+15. ie事件对象中用srcElement替代this
+-   ```js
+        let EventUtil = {
+            addHandler: function(element, type, handler){
+
+            },
+            getEvent: function(){
+                return event? event:window.event
+            },
+            getTarget: function(){
+                return event.target || event.srcElement
+            },
+            preventDefault: function(){
+                if(event.preventDefault){
+                    event.preventDefault()
+                }else{
+                    event.returnValue = false
+                }
+            },
+            removeHandler: function(...){},
+            stopPropagation: function(event){
+                if(event.stopPropagation){
+                    event.stopPropagation()
+                }else{
+                    event.cancelBubble = true
+                }
+            }
+        }
+    ```
+## 跨域请求
+- 跨域xhr对象也施加了一些额外限制
+- 1.不能使用setRequestHeader（）设置自定义头部
+- 2.不能发送和接收cookie
+- 3.getAllResponseHeaders（）方法始终返回空字符串
+
+- cors通过一种叫预检请求的服务器验证机制，允许使用自定义头部、除get、post以外的方法，以及不同请求体内容类型
+- 图片探测是利用img标签实现跨域通信的最早的一种技术，是与服务器之间简单、跨域、单向的通信。数据通过查询字符串发送，但可以通过监听onload和onerror事件知道什么时候接收到响应。用于跟踪用户在页面上的点击操作或动态显示广告。缺点是只能发送get请求和无法获取服务器响应的内容
+- jsonp 包含在一个函数调用里，通过动态创建<script>元素并为src属性指定跨域URL实现的，和img类似，能够不受限制从其他域加载资源，相比图片探测，使用jsonp可以直接访问响应，实现浏览器与服务器的双向通信，缺点是从不同域拉去可执行代码，要保证可信，第二个是不好确定jsonp请求是否失败，为此开发者经常使用计时器来决定是否放弃等待响应。这种方式并不准确，毕竟不同用户的网络连接速度和带宽是不一样的
+- 
