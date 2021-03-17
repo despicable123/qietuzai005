@@ -172,7 +172,28 @@
     }() //单例对象管理应用程序级的信息。
 ```
 2. 如果构造函数返回一个对象，则该对象作为整个表达式的值返回，而传入构造函数的this将被丢弃，但是如果构造函数返回的是非对象类型，则忽略返回值，返回新创建的对象。
-3. 
+3. var注册在最近的函数环境，无视块作用域，for循环的块级作用域会被var忽略。
+4. 生成器函数能生成一组值的序列，但每个值的生成是基于每次请求，并不同于标准函数那样立即生成。
+5. 调用生成器函数不一定会执行生成器函数体，通过创建迭代器对象，可以与生成器通信。迭代器用于控制生成器的执行，迭代器对象暴露的最基本接口时next方法，这个方法可以用来向生成器请求一个值进而控制生成器。
+6. 生成器函数遍历dom树
+```js
+    function* DomTraversal(element){
+        yield element
+        element = element.firstElementChild
+        while (element){
+            yield* DomTraversal(element)
+            element = element.nextElementSibling
+        }
+    }
+
+    const subTree = document.getElementById("subTree")
+    for(let element of DomTraversal(subTree)){
+        console.log(element.nodeName)
+    }
+```
+7. 标准函数仅仅会被重复调用，每次调用都会创建一个新的执行环境上下文。相比之下，生成器的执行环境上下文则会暂时挂起并在将来恢复。
+8. 
+
 
 ## promise
 1. promise.resolve()静态方法能够包装任何非promise值，包括错误对象，将其转化为解决的期约，如果传入的参数本身就是一个期约，那它的行为就类似于一个空包装。可以说是一个幂等方法，这个幂等性会保留传入期约的状态。
@@ -261,6 +282,129 @@
           }
       }
     ```
+12. 设计一个函数，用于测试请求一个 URL 的平均耗时。要求可以设置总的请求次数以及并发请求个数。假设环境是小程序，使用的接口是 wx.request ，不考虑请求失败的情况。
+ 
+  @synopsis  测试网络请求平均耗时
+ 
+  @param URL 请求的地址
+  @param count 请求的总次数，取值范围 >= 1
+  @param concurrentCount 并发请求限制个数（即最多只能同时发起多少个请求）。取值范围 >=1
+ 
+  @returns 一个 Promise 对象，resolve 平均耗时
+
+```js
+    let count1 = count
+    function wxRequest (url){
+        return new Promise((resovle, reject)=>{
+            let beginTime = new Date()
+            let runTime
+            wx.request({
+                url:url
+                success(){
+                    runTime = new Date()-beginTime
+                    resolve(runTime)
+                }
+            })
+        })
+    }
+    
+    let _count = 0
+    let Time
+    function bao(){
+        _count++
+        console.log("并发：",_count)
+        if( count > 0 && _count < concurrentCount){
+            wxRequest(url).then((runTime)=>{
+                count--
+                _count--
+                Time += runTime
+            }).then(bao)
+        }
+        if(count == 0){
+            return Promise.resolve(Time/count1)
+        }
+    }
+
+    for(let i = 0; i < concurrentCount; i++){
+        bao()
+    }
+```
+
+13. // JS实现一个带并发限制的异步调度器Scheduler，
+    // 保证同时运行的任务最多有两个。
+    // 完善代码中Scheduler类，
+    // 使得以下程序能正确输出
+```js
+    class Scheduler {
+        constructor() {
+            this.count = 2
+            this.queue = []
+            this.run = []
+        }
+
+        add(task) {
+                    // ...
+        }
+    }
+
+
+    const timeout = (time) => new Promise(resolve => {
+        setTimeout(resolve, time)
+    })
+
+    const scheduler = new Scheduler()
+    const addTask = (time, order) => {
+        scheduler.add(() => timeout(time)).then(() => console.log(order))
+    }
+
+    addTask(1000, '1')
+    addTask(500, '2')
+    addTask(300, '3')
+    addTask(400, '4')
+    // output: 2 3 1 4
+
+    // 一开始，1、2两个任务进入队列
+    // 500ms时，2完成，输出2，任务3进队
+    // 800ms时，3完成，输出3，任务4进队
+    // 1000ms时，1完成，输出1
+    // 1200ms时，4完成，输出4
+
+    class Scheduler {
+    constructor() {
+        this.awatiArr = [];
+        this.count = 0;
+    }
+    async add(promiseCreator) {
+        if (this.count >= 2) {
+        await new Promise((resolve) => {
+            this.awatiArr.push(resolve);
+        });
+        }
+        this.count++;
+        const res = await promiseCreator();
+        this.count--;
+        if (this.awatiArr.length) {
+        // 前面promise的resolve
+        this.awatiArr.shift()();
+        }
+        return res;
+    }
+    }
+    const scheduler = new Scheduler();
+    const timeout = (time) => {
+    return new Promise(r => setTimeout(r, time))
+    }
+    const addTask = (time, order) => {
+    scheduler.add(() => timeout(time))
+        .then(() => console.log(order))
+    }
+    // test
+    // addTask(1000, 1)
+    // addTask(500, 2)
+    // addTask(300, 3)
+    // addTask(400, 4)
+ ```
+ [解释地址](https://fanerge.github.io/2020/%E6%9D%A5%E5%87%A0%E9%81%93Promise%E7%9A%84%E9%A2%98%EF%BC%8C%E7%9C%8B%E7%9C%8B%E4%BD%A0%E4%BC%9A%E5%87%A0%E9%81%93.html)
 
 ## Eventloop
 1. js放在dom渲染后面
