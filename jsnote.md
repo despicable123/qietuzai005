@@ -426,7 +426,7 @@ Object.defineProperty(Ninja.prototype, "constructor", {
 1. dom总共有12种节点类型，这些类型都继承一种基本类型
 2. NodeList是类数组对象，是DOM结构的查询，会根据DOM结构变化实时变化，是实时的活动对象，而不是第一次访问时所获得的内容的快照
 3. cloneNode（）方法不会复制添加到DOM节点的js属性，比如事件处理程序
-4. 当页面中包含来自某个不同子域的窗格（<frame>）或者内嵌窗格（<iframe>）时，设置document.domain时有用的，因为跨源通信隐患，不同子域无法通过js通信，如果把document.domain设置成相同值，这些页面就可以访问对方js了，这个属性一旦放松就不能收紧了
+4. 当页面中包含来自某个不同子域的窗格（&#60;frame>）或者内嵌窗格（&#60;iframe>）时，设置document.domain时有用的，因为跨源通信隐患，不同子域无法通过js通信，如果把document.domain设置成相同值，这些页面就可以访问对方js了，这个属性一旦放松就不能收紧了
 5. querySelector（）返回的是NodeList的静态实例，只是静态的快照而不是实时的查询
 6. selectors API采用的css选择符的模式匹配dom元素
 7. defer可以延迟脚本执行
