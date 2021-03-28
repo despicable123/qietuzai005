@@ -1,0 +1,18 @@
+/*首先看它的父元素是不是块级元素，如果是，则直接给父元素设置 text-align: center; */
+/* 如果不是，则先将其父元素设置为块级元素，再给父元素设置 text-align: center; */
+/* 定宽度：需要谁居中，给其设置 margin: 0 auto; （作用：使盒子自己居中） */
+/* 首先设置父元素为相对定位，再设置子元素为绝对定位，设置子元素的left:50%，即让子元素的左上角水平居中；
+
+定宽度：设置绝对子元素的 margin-left: -元素宽度的一半px; 或者设置transform: translateX(-50%);
+ */
+ /* 单行的行内元素
+只需要设置单行行内元素的"行高等于盒子的高"即可； */
+/* 多行的行内元素 */
+/* 使用给父元素设置display:table-cell;和vertical-align: middle;属即可； */
+/* 使用flexbox布局实现（高度定不定都可以）
+使用flexbox布局，只需要给待处理的块状元素的父元素添加属性 display: flex; align-items: center; */
+/* 已知高度和宽度的元素
+方案一：设置父元素为相对定位，给子元素设置绝对定位，top: 0; right: 0; bottom: 0; left: 0; margin: auto; */
+/* 方案二：设置父元素为相对定位，给子元素设置绝对定位，left: 50%; top: 50%; margin-left: --元素宽度的一半px; margin-top: --元素高度的一半px; */
+/* 使用定位属性
+设置父元素为相对定位，给子元素设置绝对定位，left: 50%; top: 50%; transform: translateX(-50%) translateY(-50%); */
