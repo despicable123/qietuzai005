@@ -16,3 +16,4 @@
 /* 方案二：设置父元素为相对定位，给子元素设置绝对定位，left: 50%; top: 50%; margin-left: --元素宽度的一半px; margin-top: --元素高度的一半px; */
 /* 使用定位属性
 设置父元素为相对定位，给子元素设置绝对定位，left: 50%; top: 50%; transform: translateX(-50%) translateY(-50%); */
+/* 使用flex的content-justify和align-items属性 */
