@@ -381,3 +381,67 @@ async function bao(){
 for (let i = 0; i < l; i++) {
     bao();
 }
+
+// vue响应式原理
+class Dep {
+  constructor(){
+    this.subs = []
+  }
+  addSub(sub){
+    this.subs.push(sub)
+  }
+  notify(){
+    this.subs.forEach(sub=>{
+      sub.update()
+    })
+  }
+}
+
+class Watcher {
+  constructor(){
+    Dep.target = this
+  }
+  update(){
+    //更新视图的方法
+  }
+}
+function defineReactive(){
+  const dep = new Dep()
+  
+  Object.defineProperty(obj,key,{
+    enumerable: true,
+    configurable: true,
+    get: function reactiveGetter(){
+      dep.addSub(Dep.target)
+    },
+    set: function reactiveSetter(newVal){
+      if(newVal == val) return
+      val = newVal
+      dep.notify();
+      console.log('update')
+    }
+  })
+}
+function observer (value) {
+  if (!value || (typeof value !== 'object')) {
+      return;
+  }
+  
+  Object.keys(value).forEach((key) => {
+      defineReactive(value, key, value[key]);
+  });
+}
+class Vue{
+  constructor(options){
+    this._data = options.data()
+    observer(this._data)
+    
+  }
+}
+
+let o = new Vue({
+  data: {
+      test: "I am test."
+  }
+});
+o._data.test = "hello,test.";
