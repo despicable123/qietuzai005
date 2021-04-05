@@ -21,7 +21,7 @@ function copy(object){
 function deepcopy(obj){
   let res = obj instanceof Array?[]:{};
   for(const [k,v] of Object.entries(obj)){ //无论数组还是对象都可以被解构
-    res[k] = typeof v == 'object'?deepcopy(v):v;
+    res[k] = typeof v === 'object'?deepcopy(v):v;
   }
   return res;
 }
