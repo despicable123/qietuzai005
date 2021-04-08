@@ -445,3 +445,27 @@ let o = new Vue({
   }
 });
 o._data.test = "hello,test.";
+
+//数组扁平化
+function flatten(arr){
+  arr.reduce((r,l)=>{
+    return r.concat(l instanceof Array? flatten(l): l)
+  } ,[])
+}
+
+//对象扁平化 深搜索
+function flattenObj(obj, tempKey, resObj){
+  tempKey = tempKey || ''
+  resObj = resObj || {}
+  for(let key in obj){
+    let  value = obj[key]
+    tempKey = tempKey + key + '.'
+    if(typeof value === 'object'){
+      flattenObj(value,tempKey,resObj)
+    }else
+    {
+      resObj[key] = value
+    }
+  }
+  return resObj
+}
