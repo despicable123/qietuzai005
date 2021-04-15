@@ -59,6 +59,17 @@ use 字段有几种写法
 use 字段可以是一个数组，例如处理CSS文件是，`use: ['style-loader', 'css-loader']`
 use 数组的每一项既可以是字符串也可以是一个对象，当我们需要在webpack 的配置文件中对 loader 进行配置，就需要将其编写为一个对象，并且在此对象的 options 字段中进行配置，如上
 
+babel-loader只会将 ES6/7/8语法转换为ES5语法，但是对新api并不会转换 例如(promise、Generator、Set、Maps、Proxy等)
+此时我们需要借助babel-polyfill来帮助我们转换
+```js
+// webpack.config.js
+const path = require('path')
+module.exports = {
+    entry: ["@babel/polyfill",path.resolve(__dirname,'../src/index.js')],    // 入口文件
+}
+
+```
+
 ### 浏览器中查看页面
 查看页面，难免就需要 html 文件，有小伙伴可能知道，有时我们会指定打包文件中带有 hash，那么每次生成的 js 文件名会有所不同，总不能让我们每次都人工去修改 html，这样不是显得我们很蠢嘛~
 我们可以使用 html-webpack-plugin 插件来帮助我们完成这些事情。
@@ -130,7 +141,7 @@ less-loader 负责处理编译 .less 文件,将其转为 css
 这里，我们之间在 webpack.config.js 写了 autoprefixer 需要兼容的浏览器，仅是为了方便展示。推荐大家在根目录下创建 .browserslistrc，将对应的规则写在此文件中，除了 autoprefixer 使用外，@babel/preset-env、stylelint、eslint-plugin-conmpat 等都可以共用。
 那么我们要怎么处理图片或是本地的一些其它资源文件呢。不用想，肯定又需要 loader 出马了。
 - 图片/字体文件处理
-我们可以使用` url-loader `或者 `file-loader` 来处理本地的资源文件。url-loader 和 file-loader 的功能类似，但是 `url-loader` 可以指定在文件大小小于指定的限制时，返回 `DataURL`，因此，个人会优先选择使用 `url-loader`。
+我们可以使用` url-loader `或者 `file-loader` 来处理本地的资源文件。url-loader 和 file-loader 的功能类似，但是 `url-loader` 可以指定在文件大小小于指定的限制时，返回 `DataURL`(base64)，因此，个人会优先选择使用 `url-loader`。
 用`less-loader`或`sass-loader`的话，还要配一个`url-resolve-loader`，不然如果在less或sass文件中@import另一个less或sass的文件中有使用相对路径时，会出现最终打包出的资源路径出错的情况，这是因为打包过程中都是以入口文件确定资源路径的，用`url-resolve-loader`可以解决这个问题
 ```js
 //webpack.config.js
@@ -177,6 +188,38 @@ use: [
 当本地资源较多时，我们有时会希望它们能打包在一个文件夹下，这也很简单，我们只需要在 `url-loader` 的 `options` 中指定 outpath，如: `outputPath: 'assets'`，构建出的目录如下:
 <img src = 'https://user-gold-cdn.xitu.io/2020/3/2/17098ee50d59a0cf?imageView2/0/w/1280/h/960/format/webp/ignore-error/1'></img>
 如果你在 public/index.html 文件中，使用本地的图片,构建之后，通过相对路径压根找不着这张图片
+
+#### 拆分css
+webpack 4.0以前，我们通过extract-text-webpack-plugin插件，把css样式从js文件中提取到单独的css文件中。webpack4.0以后，官方推荐使用mini-css-extract-plugin插件来打包css文件
+如果样式文件很多，全部添加到html中，难免显得混乱。这时候我们想用把css拆分出来用外链的形式引入css文件怎么做呢？这时候我们就需要借助插件来帮助我们
+mini-css-extract-plugin会将所有的css样式合并为一个css文件。
+```js
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+module.exports = {
+  //...省略其他配置
+  module: {
+    rules: [
+      {
+        test: /\.less$/,
+        use: [
+           MiniCssExtractPlugin.loader,
+          'css-loader',
+          'less-loader'
+        ],
+      }
+    ]
+  },
+  plugins: [
+    new MiniCssExtractPlugin({
+        filename: "[name].[hash].css",
+        chunkFilename: "[id].css",
+    })
+  ]
+}
+```
+
+file-loader就是将文件在进行一些处理后（主要是处理文件名和路径、解析文件url），并将文件移动到输出的目录中
+url-loader 一般与file-loader搭配使用，功能与 file-loader 类似，如果文件小于限制的大小。则会返回 base64 编码，否则使用 file-loader 将文件移动到输出的目录中
 
 ####  处理 html 中的本地图片
 html-withimg-loader
@@ -384,69 +427,345 @@ import { View, ListView, StyleSheet, Animated } from 'react-native';
 更好的做法是创建多个配置文件，如: webpack.base.js、webpack.dev.js、webpack.prod.js。
 
 webpack.base.js 定义公共的配置
-webpack.dev.js：定义开发环境的配置
-webpack.prod.js：定义生产环境的配置
+webpack.dev.js：定义开发环境的配置 开发环境主要实现的是热更新,不要压缩代码，完整的sourceMap
+webpack.prod.js：定义生产环境的配置 生产环境主要实现的是压缩代码、提取css文件、合理的sourceMap、分割代码 安装webpack-merge copy-webpack-plugin optimize-css-assets-webpack-plugin uglifyjs-webpack-plugin
 
 webpack-merge 专为 webpack 设计，提供了一个 merge 函数，用于连接数组，合并对象。
+copy-webpack-plugin 拷贝静态资源
+optimize-css-assets-webpack-plugin 压缩css
+uglifyjs-webpack-plugin 压缩js
+
+webpack mode设置production的时候会自动压缩js代码。原则上不需要引入uglifyjs-webpack-plugin进行重复工作。但是optimize-css-assets-webpack-plugin压缩css的同时会破坏原有的js压缩，所以这里我们引入uglifyjs进行压缩
+
+## webpack.config.js
+
 ```js
-const merge = require('webpack-merge');
-merge({
-    devtool: 'cheap-module-eval-source-map',
-    module: {
-        rules: [
-            {a: 1}
-        ]
+const path = require('path')
+const {CleanWebpackPlugin} = require('clean-webpack-plugin')
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+const vueLoaderPlugin = require('vue-loader/lib/plugin')
+const MiniCssExtractPlugin = require("mini-css-extract-plugin")
+const devMode = process.argv.indexOf('--mode=production') === -1;
+module.exports = {
+  entry:{
+    main:path.resolve(__dirname,'../src/main.js')
+  },
+  output:{
+    path:path.resolve(__dirname,'../dist'),
+    filename:'js/[name].[hash:8].js',
+    chunkFilename:'js/[name].[hash:8].js'
+  },
+  module:{
+    rules:[
+      {
+        test:/\.js$/,
+        use:{
+          loader:'babel-loader',
+          options:{
+            presets:['@babel/preset-env']
+          }
+        },
+        exclude:/node_modules/
+      },
+      {
+        test:/\.vue$/,
+        use:[{
+          loader:'vue-loader',
+          options:{
+            compilerOptions:{
+              preserveWhitespace:false
+            }
+          }
+        }]
+      },
+      {
+        test:/\.css$/,
+        use:[{
+          loader: devMode ? 'vue-style-loader' : MiniCssExtractPlugin.loader,
+          options:{
+            publicPath:"../dist/css/",
+            hmr:devMode
+          }
+        },'css-loader',{
+          loader:'postcss-loader',
+          options:{
+            plugins:[require('autoprefixer')]
+          }
+        }]
+      },
+      {
+        test:/\.less$/,
+        use:[{
+          loader:devMode ? 'vue-style-loader' : MiniCssExtractPlugin.loader,
+          options:{
+            publicPath:"../dist/css/",
+            hmr:devMode
+          }
+        },'css-loader','less-loader',{
+          loader:'postcss-loader',
+          options:{
+            plugins:[require('autoprefixer')]
+          }
+        }]
+      },
+      {
+        test:/\.(jep?g|png|gif)$/,
+        use:{
+          loader:'url-loader',
+          options:{
+            limit:10240,
+            fallback:{
+              loader:'file-loader',
+              options:{
+                name:'img/[name].[hash:8].[ext]'
+              }
+            }
+          }
+        }
+      },
+      {
+        test:/\.(mp4|webm|ogg|mp3|wav|flac|aac)(\?.*)?$/,
+        use:{
+          loader:'url-loader',
+          options:{
+            limit:10240,
+            fallback:{
+              loader:'file-loader',
+              options:{
+                name:'media/[name].[hash:8].[ext]'
+              }
+            }
+          }
+        }
+      },
+      {
+        test:/\.(woff2?|eot|ttf|otf)(\?.*)?$/i,
+        use:{
+          loader:'url-loader',
+          options:{
+            limit:10240,
+            fallback:{
+              loader:'file-loader',
+              options:{
+                name:'media/[name].[hash:8].[ext]'
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  resolve:{
+    alias:{
+      'vue$':'vue/dist/vue.runtime.esm.js',
+      ' @':path.resolve(__dirname,'../src')
     },
-    plugins: [1,2,3]
-}, {
-    devtool: 'none',
-    mode: "production",
-    module: {
-        rules: [
-            {a: 2},
-            {b: 1}
-        ]
-    },
-    plugins: [4,5,6],
-});
-//合并后的结果为
-{
-    devtool: 'none',
-    mode: "production",
-    module: {
-        rules: [
-            {a: 1},
-            {a: 2},
-            {b: 1}
-        ]
-    },
-    plugins: [1,2,3,4,5,6]
+    extensions:['*','.js','.json','.vue']
+  },
+  plugins:[
+    new CleanWebpackPlugin(),
+    new HtmlWebpackPlugin({
+      template:path.resolve(__dirname,'../public/index.html')
+    }),
+    new vueLoaderPlugin(),
+    new MiniCssExtractPlugin({
+      filename: devMode ? '[name].css' : '[name].[hash].css',
+      chunkFilename: devMode ? '[id].css' : '[id].[hash].css'
+    })
+  ]
 }
 ```
-webpack.config.base.js 中是通用的 webpack 配置，以 webpack.config.dev.js 为例，如下：
-```js
-//webpack.config.dev.js
-const merge = require('webpack-merge');
-const baseWebpackConfig = require('./webpack.config.base');
 
-module.exports = merge(baseWebpackConfig, {
-    mode: 'development'
-    //...其它的一些配置
-});
+### webpack.dev.js
+```js
+const Webpack = require('webpack')
+const webpackConfig = require('./webpack.config.js')
+const WebpackMerge = require('webpack-merge')
+module.exports = WebpackMerge(webpackConfig,{
+  mode:'development',
+  devtool:'cheap-module-eval-source-map',
+  devServer:{
+    port:3000,
+    hot:true,
+    contentBase:'../dist'
+  },
+  plugins:[
+    new Webpack.HotModuleReplacementPlugin()
+  ]
+})
 ```
 
-然后修改我们的 package.json，指定对应的 config 文件：
+### webpack.prod.js
 ```js
-//package.json
-{
-    "scripts": {
-        "dev": "cross-env NODE_ENV=development webpack-dev-server --config=webpack.config.dev.js",
-        "build": "cross-env NODE_ENV=production webpack --config=webpack.config.prod.js"
-    },
-}
+const path = require('path')
+const webpackConfig = require('./webpack.config.js')
+const WebpackMerge = require('webpack-merge')
+const CopyWebpackPlugin = require('copy-webpack-plugin')
+const OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin')
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
+module.exports = WebpackMerge(webpackConfig,{
+  mode:'production',
+  devtool:'cheap-module-source-map',
+  plugins:[
+    new CopyWebpackPlugin([{
+      from:path.resolve(__dirname,'../public'),
+      to:path.resolve(__dirname,'../dist')
+    }]),
+  ],
+  optimization:{
+    minimizer:[
+      new UglifyJsPlugin({//压缩js
+        cache:true,
+        parallel:true,
+        sourceMap:true
+    }),
+    new OptimizeCssAssetsPlugin({})
+    ],
+    splitChunks:{
+      chunks:'all',
+      cacheGroups:{
+        libs: {
+          name: "chunk-libs",
+          test: /[\\/]node_modules[\\/]/,
+          priority: 10,
+          chunks: "initial" // 只打包初始时依赖的第三方
+        }
+      }
+    }
+  }
+})
+```
+
+### 优化打包速度
+构建速度指的是我们每次修改代码后热更新的速度以及发布前打包文件的速度。
+##### 合理的配置mode参数与devtool参数
+mode可设置development production两个参数
+如果没有设置，webpack4 会将 mode 的默认值设置为 production 
+production模式下会进行tree shaking(去除无用代码)和uglifyjs(代码压缩混淆)
+##### 缩小文件的搜索范围(配置include exclude alias noParse extensions)
+- alias: 当我们代码中出现 import 'vue'时， webpack会采用向上递归搜索的方式去node_modules 目录下找。为了减少搜索范围我们可以直接告诉webpack去哪个路径下查找。也就是别名(alias)的配置。
+- include exclude 同样配置include exclude也可以减少webpack loader的搜索转换时间。
+- noParse  当我们代码中使用到import jq from 'jquery'时，webpack会去解析jq这个库是否有依赖其他的包。但是我们对类似jquery这类依赖库，一般会认为不会引用其他的包(特殊除外,自行判断)。增加- noParse属性,告诉webpack不必解析，以此增加打包速度。
+- extensions webpack会根据extensions定义的后缀查找文件(频率较高的文件类型优先写在前面)
+
+#####  使用HappyPack开启多进程Loader转换
+在webpack构建过程中，实际上耗费时间大多数用在loader解析转换以及代码的压缩中。日常开发中我们需要使用Loader对js，css，图片，字体等文件做转换操作，并且转换的文件数据量也是非常大。由于js单线程的特性使得这些转换操作不能并发处理文件，而是需要一个个文件进行处理。HappyPack的基本原理是将这部分任务分解到多个子进程中去并行处理，子进程处理完成后把结果发送到主进程中，从而减少总的构建时间
+
+##### 使用webpack-parallel-uglify-plugin 增强代码压缩
+#####  抽离第三方模块
+对于开发项目中不经常会变更的静态依赖文件。类似于我们的elementUi、vue全家桶等等。因为很少会变更，所以我们不希望这些依赖要被集成到每一次的构建逻辑中去。 这样做的好处是每次更改我本地代码的文件的时候，webpack只需要打包我项目本身的文件代码，而不会再去编译第三方库。以后只要我们不升级第三方包的时候，那么webpack就不会对这些库去打包，这样可以快速的提高打包的速度。
+这里我们使用webpack内置的DllPlugin DllReferencePlugin进行抽离
+在与webpack配置文件同级目录下新建webpack.dll.config.js 代码如下
+```js
+// webpack.dll.config.js
+const path = require("path");
+const webpack = require("webpack");
+module.exports = {
+  // 你想要打包的模块的数组
+  entry: {
+    vendor: ['vue','element-ui'] 
+  },
+  output: {
+    path: path.resolve(__dirname, 'static/js'), // 打包后文件输出的位置
+    filename: '[name].dll.js',
+    library: '[name]_library' 
+     // 这里需要和webpack.DllPlugin中的`name: '[name]_library',`保持一致。
+  },
+  plugins: [
+    new webpack.DllPlugin({
+      path: path.resolve(__dirname, '[name]-manifest.json'),
+      name: '[name]_library', 
+      context: __dirname
+    })
+  ]
+};
+```
+在package.json中配置如下命令
+`"dll": "webpack --config build/webpack.dll.config.js"`
+接下来在我们的webpack.config.js中增加以下代码
+```js
+module.exports = {
+  plugins: [
+    new webpack.DllReferencePlugin({
+      context: __dirname,
+      manifest: require('./vendor-manifest.json')
+    }),
+    new CopyWebpackPlugin([ // 拷贝生成的文件到dist目录 这样每次不必手动去cv
+      {from: 'static', to:'static'}
+    ]),
+  ]
+};
+```
+执行
+```js
+npm run dll
+```
+会发现生成了我们需要的集合第三地方 代码的vendor.dll.js 我们需要在html文件中手动引入这个js文件
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>老yuan</title>
+  <script src="static/js/vendor.dll.js"></script>
+</head>
+<body>
+  <div id="app"></div>
+</body>
+</html>
+```
+这样如果我们没有更新第三方依赖包，就不必npm run dll。直接执行npm run dev npm run build的时候会发现我们的打包速度明显有所提升。因为我们已经通过dllPlugin将第三方依赖包抽离出来了。
+
+##### 配置缓存
+我们每次执行构建都会把所有的文件都重复编译一遍，这样的重复工作是否可以被缓存下来呢，答案是可以的，目前大部分 loader 都提供了cache 配置项。比如在 babel-loader 中，可以通过设置cacheDirectory 来开启缓存，babel-loader?cacheDirectory=true 就会将每次的编译结果写进硬盘文件（默认是在项目根目录下的node_modules/.cache/babel-loader目录内，当然你也可以自定义）
+
+但如果 loader 不支持缓存呢？我们也有方法,我们可以通过cache-loader ，它所做的事情很简单，就是 babel-loader 开启 cache 后做的事情，将 loader 的编译结果写入硬盘缓存。再次构建会先比较一下，如果文件较之前的没有发生变化则会直接使用缓存。使用方法如官方 demo 所示，在一些性能开销较大的 loader 之前添加此 loader即可
+
+### 优化打包文件体积
+打包的速度我们是进行了优化，但是打包后的文件体积却是十分大，造成了页面加载缓慢，浪费流量等，接下来让我们从文件体积上继续优化
+
+##### 引入webpack-bundle-analyzer分析打包后的文件
+webpack-bundle-analyzer将打包后的内容束展示为方便交互的直观树状图，让我们知道我们所构建包中真正引入的内容
+
+接下来在package.json里配置启动命令
+`"analyz": "NODE_ENV=production npm_config_report=true npm run build" `
+
+windows请安装npm i -D cross-env
+`"analyz": "cross-env NODE_ENV=production npm_config_report=true npm run build" `
+
+接下来npm run analyz浏览器会自动打开文件依赖图的网页
+
+##### externals
+按照官方文档的解释，如果我们想引用一个库，但是又不想让webpack打包，并且又不影响我们在程序中以CMD、AMD或者window/global全局等方式进行使用，那就可以通过配置Externals。这个功能主要是用在创建一个库的时候用的，但是也可以在我们项目开发中充分使用
+Externals的方式，我们将这些不需要打包的静态资源从构建逻辑中剔除出去，而使用 CDN
+的方式，去引用它们。
+
+有时我们希望我们通过script引入的库，如用CDN的方式引入的jquery，我们在使用时，依旧用require的方式来使用，但是却不希望webpack将它又编译进文件中。这里官网案例已经足够清晰明了，大家有兴趣可以点击了解
+
+```html
+<script
+  src="https://code.jquery.com/jquery-3.1.0.js"
+  integrity="sha256-slogkvB1K3VOkzAI8QITxV3VzpOnkeNVsKvtkYLMjfk="
+  crossorigin="anonymous">
+</script>
 
 ```
-你可以使用 merge 合并，也可以使用 merge.smart 合并，merge.smart 在合并loader时，会将同一匹配规则的进行合并，webpack-merge 的说明文档中给出了详细的示例。
+```js
+module.exports = {
+  //...
+  externals: {
+    jquery: 'jQuery'
+  }
+};
+
+```
+```js
+import $ from 'jquery';
+$('.my-element').animate(/* ... */);
+```
+
 ### webpack 跨域
 假设前端在3000端口，服务端在4000端口，我们通过 webpack 配置的方式去实现跨域。
 首先，我们在本地创建一个 server.js：
@@ -643,7 +962,84 @@ module.exports = {
     ]
 }
 ```
+
+### 解析 vue
+vue-loader vue-template-compiler vue-style-loader
+vue-loader 用于解析.vue文件
+vue-template-compiler 用于编译模板
+```js
+const vueLoaderPlugin = require('vue-loader/lib/plugin')
+module.exports = {
+    module:{
+        rules:[{
+            test:/\.vue$/,
+            use:['vue-loader']
+        },]
+     },
+    resolve:{
+        alias:{
+          'vue$':'vue/dist/vue.runtime.esm.js',
+          ' @':path.resolve(__dirname,'../src')
+        },
+        extensions:['*','.js','.json','.vue']
+   },
+   plugins:[
+        new vueLoaderPlugin()
+   ]
+}
+```
+
+# 常用的plugin和loader
+1. html-webpack-plugin  引入不同名的文件（js文件每次名字都不一样，html引入时自动修改src）
+2. clean-webpack-plugin  打包前清空文件夹
+
+css引用use遵循从右向左解析原则
+`use:['style-loader','css-loader','less-loader']`
+3. style-loader  动态创建 style 标签，将 css 插入到 head 中
+4. css-loader 负责处理 @import 等语句
+5. less-loader 
+6. postcss-loader autoprefixer  处理兼容性 自动添加浏览器前缀  （'style-loader','css-loader','postcss-loader','less-loader'）注意顺序
+7. url-loader file-loader 就是将文件在进行一些处理后（主要是处理文件名和路径、解析文件url），并将文件移动到输出的目录中
+8. babel-loader 为了使我们的js代码兼容更多的环境 只会将 ES6/7/8语法转换为ES5语法，但是对新api并不会转换 例如(promise、Generator、Set、Maps、Proxy等)此时我们需要借助babel-polyfill来帮助我们转换
+9. vue-loader 处理vue文件
 ## tree-shaking
+
+这里单独提一下tree-shaking,是因为这里有个坑。tree-shaking的主要作用是用来清除代码中无用的部分。目前在webpack4 我们设置mode为production的时候已经自动开启了tree-shaking。但是要想使其生效，生成的代码必须是ES6模块。不能使用其它类型的模块如CommonJS之流。如果使用Babel的话，这里有一个小问题，因为Babel的预案（preset）默认会将任何模块类型都转译成CommonJS类型，这样会导致tree-shaking失效。修正这个问题也很简单，在.babelrc文件或在webpack.config.js文件中设置modules： false就好了
+
+```js
+// .babelrc
+{
+  "presets": [
+    ["@babel/preset-env",
+      {
+        "modules": false
+      }
+    ]
+  ]
+}
+```
+或者
+```js
+// webpack.config.js
+
+module: {
+    rules: [
+        {
+            test: /\.js$/,
+            use: {
+                loader: 'babel-loader',
+                options: {
+                    presets: ['@babel/preset-env', { modules: false }]
+                }
+            }，
+            exclude: /(node_modules)/
+        }
+    ]
+}
+
+```
+
+
 如果使用ES6的import 语法，那么在生产环境下，会自动移除没有使用到的代码。
 scope hosting 作用域提升
 变量提升，可以减少一些变量声明。在生产环境下，默认开启。
@@ -757,3 +1153,16 @@ const config = {
 划重点：所有可需要 tree-shaking 的代码必须以这种方式编译。因此，如果你有要导入的库，则必须将这些库编译为 es2015 模块以便进行 tree-shaking 。如果它们被编译为 commonjs，那么它们就不能做 tree-shaking ，并且将会被打包进你的应用程序中。许多库支持部分导入，lodash 就是一个很好的例子，它本身是 commonjs 模块，但是它有一个 lodash-es 版本，用的是 es2015模块。
 
 此外，如果你在应用程序中使用内部库，也必须使用 es2015 模块编译。为了减少应用程序包的大小，必须将所有这些内部库修改为以这种方式编译。
+
+
+# 手写webpack
+loader从本质上来说其实就是一个node模块。相当于一台榨汁机(loader)将相关类型的文件代码(code)给它。根据我们设置的规则，经过它的一系列加工后还给我们加工好的果汁(code)。
+
+loader编写原则
+
+- 单一原则: 每个 Loader 只做一件事；
+- 链式调用: Webpack 会按顺序链式调用每个 Loader；
+- 统一原则: 遵循 Webpack 制定的设计规则和结构，输入与输出均为字符串，各个 Loader 完全独立，即插即用；
+
+在日常开发环境中，为了方便调试我们往往会加入许多console打印。但是我们不希望在生产环境中存在打印的值。那么这里我们自己实现一个loader去除代码中的console
+

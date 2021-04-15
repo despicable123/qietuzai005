@@ -94,7 +94,7 @@ vue对象的属性有值了，但是DOM还没有生成，$el属性还不存在�
 ​ 检查vue配置，即new Vue{}里面的el项是否存在，有就继续检查template项。没有则等到手动绑定调用 vm.el的绑定。
 
     - 6.2 检查是否有template属性
-检查配置中的template项，如果没有template进行填充被绑定区域，则被绑定区域的el对outerHTML（即整个#app DOM对象，包括和标签）都作为被填充对象替换掉填充区域。即： 如果vue对象中有 template属性，那么，template后面的HTML会替换$el对应的内容。如果有render属 性，那么render就会替换template。 即：优先关系时： render > template > el
+检查配置中的template项，如果没有template进行填充被绑定区域，则被绑定区域的el对outerHTML（即整个#app DOM对象，包括和标签）都作为被填充对象替换掉填充区域。即： 如果vue对象中有 template属性，那么，template后面的HTML会替换$el对应的内容。如果有render属性，那么render就会替换template。 即：优先关系时： render > template > el
 
 7. beforeMount函数：
 模板编译(template)、数据挂载(把数据显示在模板里)之前执行的钩子函数
