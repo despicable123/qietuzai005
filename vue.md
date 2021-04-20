@@ -1,6 +1,11 @@
 #### initState函数里面执行顺序
 beforeCreate  ->inject -> Props ->  Methods ->  Data -> Computed -> Watch ->provide-> created
 
+#### 组件化设计
+表单 Form（容器、全局校验）
+条目 formItem（数据校验，显示错误信息）
+输入框 input（数据收集）  input事件处理  value双绑
+
 #### js是如何监听HistoryRouter的变化的
 通过浏览器的地址栏来改变切换页面，前端实现主要有两种方式：
 1. 通过hash改变，利用window.onhashchange 监听。
@@ -73,6 +78,10 @@ history.pushState =  addHistoryMethod('pushState');
 history.replaceState =  addHistoryMethod('replaceState');
 ```
 
+我们利用了Vue提供的API：defineReactive，使得this._router.history对象得到监听。
+
+因此当我们第一次渲染**router-view**这个组件的时候，会获取到`this._router.history`这个对象，从而就会被监听到获取`this._router.history`。就会把**router-view**组件的依赖**wacther**收集到`this._router.history`对应的收集器**dep**中，因此`this._router.history`每次改变的时候。`this._router.history`对应的收集器**dep**就会通知**router-view**的组件依赖的**wacther**执行**update()**，从而使得`router-view`重新渲染（**其实这就是vue响应式的内部原理**）
+
 #### Vue生命周期经历哪些阶段
 详细来说：开始创建、初始化数据、编译模板、挂载Dom、渲染→更新→渲染、销毁等一系列过程
 1. 实例化vue(组件)对象：new Vue()
@@ -118,3 +127,51 @@ vue（组件）对象对应的dom中的内部（innerHTML）改变了，所以�
 Vue 的缓存机制并不是直接存储 DOM 结构，而是将 DOM 节点抽象成了一个个 VNode节点，所以，keep- alive的缓存也是基于VNode节点的而不是直接存储DOM结构。
 
 其实就是将需要缓存的VNode节点保存在this.cache中／在render时,如果VNode的name符合在缓存条件（可以用include以及exclude控制），则会从this.cache中取出之前缓存的VNode实例进行渲染。
+
+#### vue组件通信
+1. $attrs是一个对象存储父组件传递过来但是子组件props没接收的属性
+2. $children可以拿到非原生组件，子组件不保证顺序
+3. $ref可以拿到任意组件
+4. $parent.$emit、$parent.$on 兄弟组件
+5. 祖先 provide(){return xxx:123}  后代 inject：['xxx']  单向数据流
+6. eventBus 
+7. 具名插槽
+```html
+<base-layout>
+  <template v-slot:header>
+    <h1>Here might be a page title</h1>
+  </template>
+
+  <p>A paragraph for the main content.</p>
+  <p>And another one.</p>
+
+  <template v-slot:footer>
+    <p>Here's some contact info</p>
+  </template>
+</base-layout>
+```
+```html
+<div class="container">
+  <header>
+    <slot name="header"></slot>
+  </header>
+  <main>
+    <slot></slot>
+  </main>
+  <footer>
+    <slot name="footer"></slot>
+  </footer>
+</div>
+```
+8. 作用域插槽
+```html
+<current-user v-slot:default="slotProps">
+  {{ slotProps.user.firstName }}
+</current-user>
+```
+```html
+<span>
+  <slot v-bind:user="user">
+  </slot>
+</span>
+```

@@ -10,6 +10,16 @@ function myNew(){
     return typeof result === 'object'?result:obj;
   }
 
+//最好是下面这种方式，上面直接操作_proto_性能损耗较大
+function _new(fn,...rest){
+  //基于fn的prototype构建对象的原型
+  const thisObj = Object.create(fn.prototype);
+  //将thisObj作为fn的this，继承其属性，并获取返回结果为result
+  const result = fn.apply(thisObj,rest);
+  //根据result对象的类型决定返回结果
+  return typeof result === "object" ? result : thisObj;
+}
+
 function copy(object){
   let res = {};
   for (const key in object){
@@ -29,15 +39,15 @@ function deepcopy(obj){
 
 A = Animal.bind(Cat,name)
 a = new A(age)
-function mybind(context,...args1){
-  if(typeof this !== "function") throw new Error('not function')
+Function.prototype.mybind = function(context,...args1){
+  // if(typeof this !== "function") throw new Error('not function')
   let self = this  //接收外部是谁调用bind
   let Fmiddle = function(){}
   let Fn = function(...args2){
     return self.apply(this instanceof Fmiddle? this : context,[...args1].contact([...args2]))//判断是new绑定还是直接绑定，new绑定就绑定new调用的this，直接绑定的话 this指向上下文
   }
       //如果调用bind的方法是原型上的方法，需要将返回函数的原型链指向调用bind的方法 使得A的实例可以使用Animal的属性
-  Fmiddle.prototype = this.prototype //不使用Fn.prototype = this.prototype 原因是Fn.prototype改变时 this.prototype也会改变 所以用一个空函数作为桥梁 执行完空函数就销毁了
+  Fmiddle.prototype = self.prototype //不使用Fn.prototype = this.prototype 原因是Fn.prototype改变时 this.prototype也会改变 所以用一个空函数作为桥梁 执行完空函数就销毁了
   Fn.prototype = new Fmiddle();
   return Fn;
 }
@@ -65,19 +75,41 @@ function myapply(obj,arr){
 
 //柯里化封装fn
 function progressCurring(fn,args){
-  var that = this
   var len = fn.length
   var args = args || [];
   return function(){
-    var _args = Array.prototype.slice.call(arguments)
-    Array.prototype.push.apply(args,_args);
+    var sub_args = Array.prototype.slice.call(arguments)
+    let _args = Array.prototype.concat.apply(args,sub_args);
 
     if(_args.length < len){
-      return progressCurring.call(that,fn,_args);
+      return progressCurring.call(this,fn,_args);
     }
-
     return fn.apply(this,_args)
   }
+}
+
+// 第二版
+function sub_curry(fn) {
+  var args = [].slice.call(arguments, 1);
+  return function() {
+      return fn.apply(this, args.concat([].slice.call(arguments)));
+  };
+}
+
+function curry(fn, length) {
+
+  length = length || fn.length;
+
+  var slice = Array.prototype.slice;
+
+  return function() {
+      if (arguments.length < length) {
+          var combined = [fn].concat(slice.call(arguments));
+          return curry(sub_curry.apply(this, combined), length - arguments.length);
+      } else {
+          return fn.apply(this, arguments);
+      }
+  };
 }
 
 //add 柯里化
@@ -225,21 +257,20 @@ class myPromise{
 
   static all(promises){
     const resolves = []
-    return new myPromise((resolve,reject)=>{
-      promises.forEach(promise => {
-        
-        promise.then(
-          value =>{
-            resolves.push(value)
-            if(resolves.length == promises.length){
-              resolve(resolves)
-            }
+    let i = 0
+    return new Promise((res,rej)=>{
+      promises.forEach((promise,index)=>{
+        promise.then(value=>{
+          resolves[index] = value
+          i++
+          if(promises.length === i){
+            res(resolves)
+          }
         },reason=>{
-          reject(reason)
+          rej(reason)
         })
-      });
-
-    }) 
+      })
+    })
   }
 
   static race(promises){
@@ -253,7 +284,6 @@ class myPromise{
       })
     })
   }
-    
 }
 
 //使用Promise实现每隔1秒输出1,2,3
