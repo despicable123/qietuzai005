@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doc12313ument</title>
+</head>
+
+<body>
+  <div class="container">
+    <header></header>
+    <div class="main">123</div>
+    <footer></footer>
+  </div>
+</body>
+
+</html>
+
+<style>
+  html,
+  body {
+    padding: 0;
+    margin: 0;
+    /*不给高度就塌了*/
+    height: 100%;
+  }
+
+  .container {
+    /*不给高度时去掉relative*/
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  header {
+    position: absolute;
+    top: 0;
+    height: 100px;
+    width: 100%;
+    background-color: red;
+  }
+
+  footer {
+    position: absolute;
+    bottom: 0;
+    height: 100px;
+    width: 100%;
+    background-color: gray;
+  }
+
+  .main {
+    position: absolute;
+    width: 100%;
+    top: 100px;
+    /*中间自适应部分绝对定位位置，top是头部的高度*/
+    bottom: 100px;
+    /*bottom是尾部的高度*/
+    background: #ccc;
+
+  }
+</style>
