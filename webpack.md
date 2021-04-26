@@ -1282,3 +1282,12 @@ cheap 记录行信息，不记录列信息，提高代码性能，只记录业�
 module 会记录三方模块的映射关系
 开发一般是 eval-cheap-module-source-map
 生产环境 cheap-module-source-map
+
+## hmr
+
+entry 加两个文件 dev-middleware、hot-middleware
+
+1. dev-middleware，让 webpack 以 watch 模式编译，文件系统改为内存文件系统，不会把打包后的资源写入磁盘而是在内存中处理、中间件负责将编译的文件返回
+2. hot-middleware，提供浏览器和 webpack 服务器之间通信的机制、且在浏览器订阅接收 webpack 服务器端的更新变化，然后使用 webpack 的 hmr API 执行这些更改
+
+服务端监听 compiler.hooks.done 事件；通过 SSE，服务端编译完成向客户端发送 building、built、sync 事件；webpack-dev-middleware 是通过 EventSource 也叫作 server-sent-event(SSE)来实现服务器发客户端单向推送消息。通过心跳检测，来检测客户端是否还活着，这个 💓 就是 SSE 心跳检测，在服务端设置了一个 setInterval 每个 10s 向客户端发送一次
