@@ -11,7 +11,6 @@ function myNew() {
   return typeof result === "object" ? result : obj;
 }
 
-
 //最好是下面这种方式，上面直接操作_proto_性能损耗较大
 function _new(fn, ...rest) {
   //基于fn的prototype构建对象的原型
@@ -57,7 +56,6 @@ Function.prototype.mybind = function (context, ...args1) {
   return Fn;
 };
 
-
 function mycall(obj, ...args) {
   let obj = obj || window;
   obj.p = this; //调用函数添加进属性 并且调用call的函数里面的this指向obj
@@ -66,7 +64,6 @@ function mycall(obj, ...args) {
   delete obj.p; //执行完毕后删除该属性
   return res;
 }
-
 
 function myapply(obj, arr) {
   let obj = obj || window;
@@ -314,12 +311,15 @@ arr.reduce(
 function red() {
   console.log("red");
 }
+
 function green() {
   console.log("green");
 }
+
 function yellow() {
   console.log("yellow");
 }
+
 function light(delay, cb) {
   return new Promise((r) => {
     setTimeout(() => {
@@ -434,23 +434,21 @@ for (let i = 0; i < l; i++) {
   bao();
 }
 
-
 async function run() {
   if (count > limit) {
     await block();
   }
-  if(promises.length) {
-    count++
+  if (promises.length) {
+    count++;
     await promises.shift()();
-    count--
+    count--;
     next();
   }
 }
+
 function next() {
-  lock.length && lock.shift()()
+  lock.length && lock.shift()();
 }
-
-
 
 // vue响应式原理
 class Dep {
@@ -475,6 +473,7 @@ class Watcher {
     //更新视图的方法
   }
 }
+
 function defineReactive() {
   const dep = new Dep();
 
@@ -492,6 +491,7 @@ function defineReactive() {
     },
   });
 }
+
 function observer(value) {
   if (!value || typeof value !== "object") {
     return;
@@ -726,13 +726,12 @@ function searchKeys(obj, value) {
   }
 }
 
-for(let key in obj) {
-  if(obj[key] === value) {
+for (let key in obj) {
+  if (obj[key] === value) {
     return key;
-  }
-  else {
-    if(typeof obj[key] === 'obj') {
-      let res = searchkeys(obj[key], value)
+  } else {
+    if (typeof obj[key] === "obj") {
+      let res = searchkeys(obj[key], value);
       if (res) {
         return `${res}\/${key}`;
       }
@@ -740,41 +739,41 @@ for(let key in obj) {
   }
 }
 
-function getEmpty(o){
-	if(Object.prototype.toString.call(o) === '[object Object]'){
-		return {};
-	}
-	if(Object.prototype.toString.call(o) === '[object Array]'){
-		return [];
-	}
-	return o;
+function getEmpty(o) {
+  if (Object.prototype.toString.call(o) === "[object Object]") {
+    return {};
+  }
+  if (Object.prototype.toString.call(o) === "[object Array]") {
+    return [];
+  }
+  return o;
 }
 //深拷贝 广度优先遍历
-function deepCopyBFS(origin){
-	let queue = [];
-	let map = new Map(); // 记录出现过的对象，用于处理环
+function deepCopyBFS(origin) {
+  let queue = [];
+  let map = new Map(); // 记录出现过的对象，用于处理环
 
-	let target = getEmpty(origin);
-	if(target !== origin){
-		queue.push([origin, target]);
-		map.set(origin, target);
-	}
+  let target = getEmpty(origin);
+  if (target !== origin) {
+    queue.push([origin, target]);
+    map.set(origin, target);
+  }
 
-	while(queue.length){
-		let [ori, tar] = queue.shift();
-		for(let key in ori){
-			// 处理环状
-			if(map.get(ori[key])){
-				tar[key] = map.get(ori[key]);
-				continue;
-			}
+  while (queue.length) {
+    let [ori, tar] = queue.shift();
+    for (let key in ori) {
+      // 处理环状
+      if (map.get(ori[key])) {
+        tar[key] = map.get(ori[key]);
+        continue;
+      }
 
-			tar[key] = getEmpty(ori[key]);
-			if(tar[key] !== ori[key]){
-				queue.push([ori[key], tar[key]]);
-				map.set(ori[key], tar[key]);
-			}
-		}
-	}
-	return target;
+      tar[key] = getEmpty(ori[key]);
+      if (tar[key] !== ori[key]) {
+        queue.push([ori[key], tar[key]]);
+        map.set(ori[key], tar[key]);
+      }
+    }
+  }
+  return target;
 }
